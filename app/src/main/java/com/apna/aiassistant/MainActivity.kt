@@ -4,6 +4,9 @@ import android.Manifest
 import android.app.Activity
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.graphics.Color
+import android.graphics.Typeface
+import android.graphics.drawable.GradientDrawable
 import android.net.Uri
 import android.os.Bundle
 import android.speech.RecognitionListener
@@ -11,6 +14,7 @@ import android.speech.RecognizerIntent
 import android.speech.SpeechRecognizer
 import android.speech.tts.TextToSpeech
 import android.view.Gravity
+import android.view.View
 import android.widget.*
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -24,80 +28,160 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
     private lateinit var transcript: TextView
     private lateinit var language: Spinner
     private lateinit var typed: EditText
-    private val languages = listOf("Punjabi (ਪੰਜਾਬੀ)", "Hindi (हिन्दी)", "English")
+    private lateinit var micButton: Button
+    private val languages = listOf("Punjabi • ਪੰਜਾਬੀ", "Hindi • हिन्दी", "English")
     private val locales = listOf("pa-IN", "hi-IN", "en-IN")
+    private val bg = Color.rgb(6, 10, 24)
+    private val panel = Color.rgb(15, 23, 43)
+    private val cyan = Color.rgb(70, 229, 255)
+    private val white = Color.rgb(235, 244, 255)
+    private val muted = Color.rgb(147, 164, 190)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        window.statusBarColor = bg
+        window.navigationBarColor = bg
         tts = TextToSpeech(this, this)
         buildUi()
     }
 
+    private fun rounded(color: Int, radius: Float, stroke: Int = Color.TRANSPARENT): GradientDrawable =
+        GradientDrawable().apply {
+            setColor(color)
+            cornerRadius = radius
+            if (stroke != Color.TRANSPARENT) setStroke(1, stroke)
+        }
+
+    private fun label(textValue: String, size: Float, color: Int, bold: Boolean = false): TextView =
+        TextView(this).apply {
+            text = textValue
+            textSize = size
+            setTextColor(color)
+            if (bold) setTypeface(typeface, Typeface.BOLD)
+        }
+
     private fun buildUi() {
         val root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            gravity = Gravity.CENTER_HORIZONTAL
-            setPadding(28, 28, 28, 28)
-            setBackgroundColor(0xFF0B1020.toInt())
+            setPadding(22, 22, 22, 28)
+            background = GradientDrawable(
+                GradientDrawable.Orientation.TL_BR,
+                intArrayOf(Color.rgb(7, 13, 31), Color.rgb(12, 20, 43), Color.rgb(5, 9, 20))
+            )
         }
-        root.addView(TextView(this).apply {
-            text = "✦ APNA AI"
+
+        val brandRow = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+        }
+        val logo = TextView(this).apply {
+            text = "✦"
             textSize = 30f
-            setTextColor(0xFF8BE9FD.toInt())
             gravity = Gravity.CENTER
-        })
-        root.addView(TextView(this).apply {
-            text = "YOUR VOICE • YOUR PHONE"
-            textSize = 12f
-            setTextColor(0xFF9AA4B2.toInt())
-            gravity = Gravity.CENTER
-            setPadding(0, 4, 0, 18)
-        })
-        status = TextView(this).apply {
-            text = "Ready • Tap the mic to speak"
-            textSize = 16f
-            setTextColor(0xFFE6EAF2.toInt())
-            gravity = Gravity.CENTER
-            setPadding(0, 12, 0, 18)
+            setTextColor(bg)
+            background = rounded(cyan, 22f)
         }
-        root.addView(status)
+        brandRow.addView(logo, LinearLayout.LayoutParams(54, 54))
+        val brandText = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(14, 0, 0, 0)
+            addView(label("APNA AI", 25f, white, true))
+            addView(label("YOUR VOICE. YOUR PHONE.", 10f, cyan, true))
+        }
+        brandRow.addView(brandText, LinearLayout.LayoutParams(0, -2, 1f))
+        brandRow.addView(label("● ONLINE", 10f, cyan, true))
+        root.addView(brandRow)
+
+        val hero = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            gravity = Gravity.CENTER
+            background = rounded(panel, 28f, Color.rgb(34, 66, 100))
+            setPadding(18, 24, 18, 22)
+        }
+        val orb = TextView(this).apply {
+            text = "◉"
+            textSize = 50f
+            gravity = Gravity.CENTER
+            setTextColor(cyan)
+            background = rounded(Color.rgb(20, 42, 69), 100f, Color.rgb(48, 125, 167))
+        }
+        hero.addView(orb, LinearLayout.LayoutParams(104, 104).apply { bottomMargin = 14 })
+        hero.addView(label("VOICE CONTROL", 18f, white, true))
+        status = label("SYSTEM READY  •  TAP TO ACTIVATE", 11f, cyan, true)
+        status.gravity = Gravity.CENTER
+        status.setPadding(0, 8, 0, 0)
+        hero.addView(status)
+        root.addView(hero, LinearLayout.LayoutParams(-1, -2).apply { topMargin = 22 })
+
+        val langLabel = label("ASSISTANT LANGUAGE", 10f, muted, true)
+        langLabel.setPadding(3, 18, 0, 6)
+        root.addView(langLabel)
         language = Spinner(this).apply {
-            adapter = ArrayAdapter(this@MainActivity, android.R.layout.simple_spinner_dropdown_item, languages)
+            adapter = ArrayAdapter(this@MainActivity, android.R.layout.simple_spinner_dropdown_item, languages).also {
+                it.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+            }
+            background = rounded(panel, 16f, Color.rgb(40, 62, 91))
         }
-        root.addView(language, LinearLayout.LayoutParams(-1, -2))
-        root.addView(Button(this).apply {
-            text = "🎙  TAP TO SPEAK"
-            textSize = 18f
-            setOnClickListener { startListening() }
-        }, LinearLayout.LayoutParams(-1, -2).apply { topMargin = 16; bottomMargin = 16 })
-        transcript = TextView(this).apply {
-            text = "Try: Open WhatsApp • Open Instagram • What time is it?"
+        root.addView(language, LinearLayout.LayoutParams(-1, 52))
+
+        micButton = Button(this).apply {
+            text = "🎙   TAP TO SPEAK"
             textSize = 16f
-            setTextColor(0xFFE6EAF2.toInt())
-            setPadding(0, 14, 0, 18)
+            isAllCaps = false
+            setTextColor(bg)
+            typeface = Typeface.DEFAULT_BOLD
+            background = GradientDrawable(GradientDrawable.Orientation.LEFT_RIGHT, intArrayOf(cyan, Color.rgb(104, 255, 210))).apply {
+                cornerRadius = 22f
+            }
+            setOnClickListener { startListening() }
         }
-        root.addView(transcript)
+        root.addView(micButton, LinearLayout.LayoutParams(-1, 62).apply { topMargin = 16 })
+
+        val resultTitle = label("CONVERSATION", 10f, muted, true)
+        resultTitle.setPadding(3, 22, 0, 8)
+        root.addView(resultTitle)
+        transcript = label("You: —\n\nAssistant: Hey! I'm ready. Try saying “Open Instagram” or “What time is it?”", 14f, white)
+        transcript.setLineSpacing(5f, 1f)
+        transcript.setPadding(16, 16, 16, 16)
+        transcript.background = rounded(panel, 18f, Color.rgb(34, 54, 82))
+        root.addView(transcript, LinearLayout.LayoutParams(-1, -2))
+
         typed = EditText(this).apply {
             hint = "Type a command…"
-            setTextColor(0xFFFFFFFF.toInt())
-            setHintTextColor(0xFF9AA4B2.toInt())
+            textSize = 14f
+            setTextColor(white)
+            setHintTextColor(muted)
             setSingleLine(true)
+            setPadding(16, 12, 16, 12)
+            background = rounded(Color.rgb(10, 17, 34), 16f, Color.rgb(42, 69, 98))
         }
-        root.addView(typed, LinearLayout.LayoutParams(-1, -2))
-        root.addView(Button(this).apply {
-            text = "Run command"
+        root.addView(typed, LinearLayout.LayoutParams(-1, 54).apply { topMargin = 16 })
+
+        val runButton = Button(this).apply {
+            text = "RUN COMMAND  →"
+            textSize = 14f
+            isAllCaps = false
+            setTextColor(white)
+            background = rounded(Color.rgb(26, 48, 78), 16f, Color.rgb(56, 117, 160))
             setOnClickListener {
                 val cmd = typed.text.toString().trim()
                 if (cmd.isNotEmpty()) handleCommand(cmd)
+                else status.text = "TYPE A COMMAND FIRST"
             }
-        }, LinearLayout.LayoutParams(-1, -2).apply { topMargin = 8 })
-        root.addView(TextView(this).apply {
-            text = "Privacy: microphone starts only when you tap. Messages open as drafts for you to review and send. No secret background listening."
-            textSize = 12f
-            setTextColor(0xFFB8C1D1.toInt())
-            setPadding(0, 24, 0, 0)
+        }
+        root.addView(runButton, LinearLayout.LayoutParams(-1, 54).apply { topMargin = 8 })
+
+        val privacy = label("PRIVACY FIRST\nMic activates only when you tap. Messages open as drafts for you to review and send. No secret background listening.", 11f, muted)
+        privacy.setLineSpacing(3f, 1f)
+        privacy.setPadding(4, 22, 4, 0)
+        root.addView(privacy)
+
+        setContentView(ScrollView(this).apply {
+            isFillViewport = true
+            clipToPadding = false
+            setPadding(0, 0, 0, 0)
+            addView(root)
         })
-        setContentView(ScrollView(this).apply { addView(root) })
     }
 
     private fun startListening() {
@@ -106,41 +190,43 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
             return
         }
         if (!SpeechRecognizer.isRecognitionAvailable(this)) {
-            status.text = "Speech recognition unavailable • Type a command"
+            status.text = "SPEECH SERVICE UNAVAILABLE • TYPE BELOW"
             return
         }
         try {
             recognizer?.destroy()
             recognizer = SpeechRecognizer.createSpeechRecognizer(this)
+            val locale = locales[language.selectedItemPosition]
             val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
                 putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
-                putExtra(RecognizerIntent.EXTRA_LANGUAGE, locales[language.selectedItemPosition])
-                putExtra(RecognizerIntent.EXTRA_LANGUAGE_PREFERENCE, locales[language.selectedItemPosition])
+                putExtra(RecognizerIntent.EXTRA_LANGUAGE, locale)
+                putExtra(RecognizerIntent.EXTRA_LANGUAGE_PREFERENCE, locale)
                 putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, false)
             }
             recognizer?.setRecognitionListener(object : RecognitionListener {
-                override fun onReadyForSpeech(params: Bundle?) { status.text = "Listening…" }
+                override fun onReadyForSpeech(params: Bundle?) { status.text = "● LISTENING…"; micButton.text = "◉   LISTENING…" }
                 override fun onBeginningOfSpeech() {}
                 override fun onRmsChanged(rmsdB: Float) {}
                 override fun onBufferReceived(buffer: ByteArray?) {}
-                override fun onEndOfSpeech() { status.text = "Processing…" }
-                override fun onError(error: Int) { status.text = "Didn't catch that • Try again" }
+                override fun onEndOfSpeech() { status.text = "PROCESSING VOICE…"; micButton.text = "🎙   TAP TO SPEAK" }
+                override fun onError(error: Int) { status.text = "DIDN'T CATCH THAT • TRY AGAIN"; micButton.text = "🎙   TAP TO SPEAK" }
                 override fun onResults(results: Bundle?) {
                     val said = results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)?.firstOrNull().orEmpty()
-                    if (said.isNotBlank()) handleCommand(said) else status.text = "No speech detected"
+                    if (said.isNotBlank()) handleCommand(said) else status.text = "NO SPEECH DETECTED"
+                    micButton.text = "🎙   TAP TO SPEAK"
                 }
                 override fun onPartialResults(partialResults: Bundle?) {}
                 override fun onEvent(eventType: Int, params: Bundle?) {}
             })
             recognizer?.startListening(intent)
         } catch (_: Exception) {
-            status.text = "Couldn't start microphone • Check permission"
+            status.text = "MIC ERROR • CHECK PERMISSION"
+            micButton.text = "🎙   TAP TO SPEAK"
         }
     }
 
     private fun handleCommand(raw: String) {
         val command = raw.lowercase(Locale.ROOT)
-        transcript.text = "You: " + raw
         val reply: String = when {
             command.contains("time") || command.contains("समय") || command.contains("ਟਾਈਮ") || command.contains("ਵਕਤ") ->
                 "The time is " + SimpleDateFormat("h:mm a", Locale.getDefault()).format(Date())
@@ -178,10 +264,10 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
                     1 -> "नमस्ते! मैं आपकी कैसे मदद कर सकता हूँ?"
                     else -> "Hello! How can I help you?"
                 }
-            else -> "I heard: " + raw + ". Try open WhatsApp, open Instagram, open YouTube, or what time is it."
+            else -> "I heard: $raw. Try open Instagram, open WhatsApp, open YouTube, or ask the time."
         }
-        transcript.text = "You: " + raw + "\n\nAssistant: " + reply
-        status.text = "Ready"
+        transcript.text = "YOU  /  $raw\n\nAPNA AI  /  $reply"
+        status.text = "SYSTEM READY  •  TAP TO ACTIVATE"
         speak(reply)
     }
 
@@ -189,13 +275,19 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         return try {
             val launch = packageManager.getLaunchIntentForPackage(packageName)
             if (launch != null) {
+                launch.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                 startActivity(launch)
-                "Opening " + label + "."
+                "Opening $label."
             } else if (label == "WhatsApp") {
                 openUrl("https://www.whatsapp.com/")
-                "WhatsApp app not found. Opening its website."
-            } else "Couldn't find " + label + " installed on this phone."
-        } catch (_: Exception) { "Couldn't open " + label + "." }
+                "WhatsApp app wasn't detected. Opening WhatsApp website."
+            } else if (label == "Instagram") {
+                openUrl("https://www.instagram.com/")
+                "Instagram app wasn't detected. Opening Instagram website instead."
+            } else "Couldn't find $label installed. Check that it is installed and enabled."
+        } catch (_: Exception) {
+            "Couldn't open $label. Check that the app is installed and enabled."
+        }
     }
 
     private fun openUrl(url: String) {
@@ -205,7 +297,7 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
 
     private fun speak(message: String) {
         if (!ttsReady) {
-            status.text = "Reply shown • Voice engine is still loading"
+            status.text = "REPLY SHOWN • VOICE ENGINE LOADING"
             return
         }
         val desired = Locale.forLanguageTag(locales[language.selectedItemPosition])
@@ -221,16 +313,16 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         if (statusCode == TextToSpeech.SUCCESS) {
             ttsReady = true
             tts?.language = Locale("en", "IN")
-            status.text = "Ready • Tap the mic to speak"
+            status.text = "SYSTEM READY  •  TAP TO ACTIVATE"
         } else {
-            status.text = "Voice engine unavailable • Check Android Text-to-Speech settings"
+            status.text = "VOICE ENGINE UNAVAILABLE • CHECK TTS SETTINGS"
         }
     }
 
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         if (requestCode == 10 && grantResults.firstOrNull() == PackageManager.PERMISSION_GRANTED) startListening()
-        else status.text = "Microphone permission is needed for voice input"
+        else status.text = "MIC PERMISSION REQUIRED FOR VOICE INPUT"
     }
 
     override fun onDestroy() {
