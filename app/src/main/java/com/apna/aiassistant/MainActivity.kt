@@ -67,125 +67,217 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
     private fun buildUi() {
         val root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(22, 22, 22, 28)
+            setPadding(18, 14, 18, 12)
             background = GradientDrawable(
                 GradientDrawable.Orientation.TL_BR,
-                intArrayOf(Color.rgb(7, 13, 31), Color.rgb(12, 20, 43), Color.rgb(5, 9, 20))
+                intArrayOf(Color.rgb(5, 9, 22), Color.rgb(10, 18, 38), Color.rgb(5, 8, 18))
             )
         }
 
-        val brandRow = LinearLayout(this).apply {
+        // Compact app bar
+        val top = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
+            setPadding(2, 2, 2, 14)
         }
         val logo = TextView(this).apply {
             text = "✦"
-            textSize = 30f
+            textSize = 25f
             gravity = Gravity.CENTER
             setTextColor(bg)
-            background = rounded(cyan, 22f)
+            background = GradientDrawable(GradientDrawable.Orientation.TL_BR,
+                intArrayOf(cyan, Color.rgb(100, 255, 210))).apply { cornerRadius = 19f }
         }
-        brandRow.addView(logo, LinearLayout.LayoutParams(54, 54))
-        val brandText = LinearLayout(this).apply {
+        top.addView(logo, LinearLayout.LayoutParams(48, 48))
+        val nameBlock = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(14, 0, 0, 0)
-            addView(label("APNA AI", 25f, white, true))
-            addView(label("YOUR VOICE. YOUR PHONE.", 10f, cyan, true))
+            setPadding(12, 0, 0, 0)
+            addView(label("APNA AI", 21f, white, true))
+            addView(label("YOUR PERSONAL ASSISTANT", 9f, muted, true))
         }
-        brandRow.addView(brandText, LinearLayout.LayoutParams(0, -2, 1f))
-        brandRow.addView(label("● ONLINE", 10f, cyan, true))
-        root.addView(brandRow)
+        top.addView(nameBlock, LinearLayout.LayoutParams(0, -2, 1f))
+        val live = TextView(this).apply {
+            text = "● READY"
+            textSize = 10f
+            setTextColor(Color.rgb(104, 255, 190))
+            setPadding(11, 8, 11, 8)
+            background = rounded(Color.rgb(15, 47, 45), 30f)
+        }
+        top.addView(live)
+        root.addView(top)
 
+        // Main assistant card
         val hero = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            gravity = Gravity.CENTER
-            background = rounded(panel, 28f, Color.rgb(34, 66, 100))
-            setPadding(18, 24, 18, 22)
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            setPadding(16, 16, 14, 16)
+            background = rounded(Color.rgb(14, 27, 50), 24f, Color.rgb(35, 76, 111))
         }
         val orb = TextView(this).apply {
-            text = "◉"
-            textSize = 50f
+            text = "✦"
+            textSize = 36f
             gravity = Gravity.CENTER
             setTextColor(cyan)
-            background = rounded(Color.rgb(20, 42, 69), 100f, Color.rgb(48, 125, 167))
+            background = GradientDrawable(GradientDrawable.Orientation.TL_BR,
+                intArrayOf(Color.rgb(20, 65, 91), Color.rgb(22, 33, 68))).apply {
+                cornerRadius = 100f
+                setStroke(2, Color.rgb(58, 181, 213))
+            }
         }
-        hero.addView(orb, LinearLayout.LayoutParams(104, 104).apply { bottomMargin = 14 })
-        hero.addView(label("VOICE CONTROL", 18f, white, true))
-        status = label("SYSTEM READY  •  TAP TO ACTIVATE", 11f, cyan, true)
-        status.gravity = Gravity.CENTER
-        status.setPadding(0, 8, 0, 0)
-        hero.addView(status)
-        root.addView(hero, LinearLayout.LayoutParams(-1, -2).apply { topMargin = 22 })
+        hero.addView(orb, LinearLayout.LayoutParams(76, 76))
+        val heroText = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(14, 0, 0, 0)
+            addView(label("I'm listening.", 19f, white, true))
+            addView(label("Speak naturally in Punjabi, Hindi or English.", 12f, muted).apply {
+                setPadding(0, 5, 0, 0)
+            })
+            status = label("SYSTEM READY • TAP THE MIC", 10f, cyan, true).apply {
+                setPadding(0, 9, 0, 0)
+            }
+            addView(status)
+        }
+        hero.addView(heroText, LinearLayout.LayoutParams(0, -2, 1f))
+        root.addView(hero, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = 14 })
 
-        val langLabel = label("ASSISTANT LANGUAGE", 10f, muted, true)
-        langLabel.setPadding(3, 18, 0, 6)
-        root.addView(langLabel)
+        // Language selector is deliberately compact, not a full-width form field.
+        val langRow = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            setPadding(4, 0, 4, 8)
+        }
+        langRow.addView(label("LANGUAGE", 10f, muted, true), LinearLayout.LayoutParams(0, -2, 1f))
         language = Spinner(this).apply {
             adapter = ArrayAdapter(this@MainActivity, android.R.layout.simple_spinner_dropdown_item, languages).also {
                 it.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
             }
-            background = rounded(panel, 16f, Color.rgb(40, 62, 91))
+            background = rounded(Color.rgb(17, 29, 51), 14f, Color.rgb(42, 72, 103))
+            setPadding(8, 0, 8, 0)
         }
-        root.addView(language, LinearLayout.LayoutParams(-1, 52))
+        langRow.addView(language, LinearLayout.LayoutParams(190, 42))
+        root.addView(langRow)
 
-        micButton = Button(this).apply {
-            text = "🎙   TAP TO SPEAK"
-            textSize = 16f
-            isAllCaps = false
-            setTextColor(bg)
-            typeface = Typeface.DEFAULT_BOLD
-            background = GradientDrawable(GradientDrawable.Orientation.LEFT_RIGHT, intArrayOf(cyan, Color.rgb(104, 255, 210))).apply {
-                cornerRadius = 22f
-            }
-            setOnClickListener { startListening() }
+        // Chat conversation panel
+        val chatHeader = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            setPadding(3, 4, 3, 9)
+            addView(label("YOUR CONVERSATION", 11f, white, true), LinearLayout.LayoutParams(0, -2, 1f))
+            addView(label("AI CHAT  ✦", 9f, cyan, true))
         }
-        root.addView(micButton, LinearLayout.LayoutParams(-1, 62).apply { topMargin = 16 })
+        root.addView(chatHeader)
 
-        val resultTitle = label("CONVERSATION", 10f, muted, true)
-        resultTitle.setPadding(3, 22, 0, 8)
-        root.addView(resultTitle)
-        transcript = label("You: —\n\nAssistant: Hey! I'm ready. Try saying “Open Instagram” or “What time is it?”", 14f, white)
+        val chatPanel = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(12, 14, 12, 14)
+            background = rounded(Color.rgb(9, 16, 32), 22f, Color.rgb(29, 47, 73))
+        }
+        val welcome = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(14, 14, 14, 14)
+            background = rounded(Color.rgb(17, 32, 55), 18f)
+        }
+        welcome.addView(label("✦  APNA AI", 11f, cyan, true))
+        welcome.addView(label("Sat Sri Akal! 👋\nI'm ready to help. Ask me anything or tell me what to open.", 14f, white).apply {
+            setLineSpacing(4f, 1f)
+            setPadding(0, 8, 0, 0)
+        })
+        chatPanel.addView(welcome)
+        transcript = label("You: —\n\nAssistant: Hey! I'm ready. Try saying “Open Instagram” or “What time is it?”", 13f, white)
         transcript.setLineSpacing(5f, 1f)
-        transcript.setPadding(16, 16, 16, 16)
-        transcript.background = rounded(panel, 18f, Color.rgb(34, 54, 82))
-        root.addView(transcript, LinearLayout.LayoutParams(-1, -2))
+        transcript.setPadding(14, 13, 14, 13)
+        transcript.background = rounded(Color.rgb(20, 29, 48), 18f, Color.rgb(36, 58, 83))
+        chatPanel.addView(transcript, LinearLayout.LayoutParams(-1, -2).apply { topMargin = 10 })
+        root.addView(chatPanel, LinearLayout.LayoutParams(-1, 0, 1f))
 
+        // Useful one-tap commands
+        val quickTitle = label("TRY A QUICK COMMAND", 9f, muted, true).apply {
+            setPadding(3, 12, 0, 7)
+        }
+        root.addView(quickTitle)
+        val quickScroll = HorizontalScrollView(this).apply {
+            isHorizontalScrollBarEnabled = false
+        }
+        val quickRow = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
+        fun quickChip(caption: String, command: String) {
+            val chip = TextView(this).apply {
+                text = caption
+                textSize = 12f
+                setTextColor(white)
+                gravity = Gravity.CENTER
+                setPadding(15, 11, 15, 11)
+                background = rounded(Color.rgb(18, 34, 57), 24f, Color.rgb(39, 75, 105))
+                setOnClickListener { handleCommand(command) }
+            }
+            quickRow.addView(chip, LinearLayout.LayoutParams(-2, -2).apply { rightMargin = 8 })
+        }
+        quickChip("◉  Time", "What time is it?")
+        quickChip("▣  Instagram", "Open Instagram")
+        quickChip("▶  YouTube", "Open YouTube")
+        quickChip("⌕  Search", "Search Google")
+        quickScroll.addView(quickRow)
+        root.addView(quickScroll)
+
+        // Chat-style composer anchored to the bottom
+        val composer = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            setPadding(8, 7, 7, 7)
+            background = rounded(Color.rgb(13, 23, 42), 25f, Color.rgb(42, 67, 95))
+        }
         typed = EditText(this).apply {
-            hint = "Type a command…"
+            hint = "Message APNA AI…"
             textSize = 14f
             setTextColor(white)
             setHintTextColor(muted)
             setSingleLine(true)
-            setPadding(16, 12, 16, 12)
-            background = rounded(Color.rgb(10, 17, 34), 16f, Color.rgb(42, 69, 98))
-        }
-        root.addView(typed, LinearLayout.LayoutParams(-1, 54).apply { topMargin = 16 })
-
-        val runButton = Button(this).apply {
-            text = "RUN COMMAND  →"
-            textSize = 14f
-            isAllCaps = false
-            setTextColor(white)
-            background = rounded(Color.rgb(26, 48, 78), 16f, Color.rgb(56, 117, 160))
-            setOnClickListener {
-                val cmd = typed.text.toString().trim()
-                if (cmd.isNotEmpty()) handleCommand(cmd)
-                else status.text = "TYPE A COMMAND FIRST"
+            imeOptions = android.view.inputmethod.EditorInfo.IME_ACTION_SEND
+            setPadding(10, 10, 6, 10)
+            background = null
+            setOnEditorActionListener { _, actionId, _ ->
+                if (actionId == android.view.inputmethod.EditorInfo.IME_ACTION_SEND) {
+                    val cmd = text.toString().trim()
+                    if (cmd.isNotEmpty()) handleCommand(cmd)
+                    true
+                } else false
             }
         }
-        root.addView(runButton, LinearLayout.LayoutParams(-1, 54).apply { topMargin = 8 })
+        composer.addView(typed, LinearLayout.LayoutParams(0, 48, 1f))
+        val send = TextView(this).apply {
+            text = "➤"
+            textSize = 23f
+            gravity = Gravity.CENTER
+            setTextColor(bg)
+            background = GradientDrawable(GradientDrawable.Orientation.LEFT_RIGHT,
+                intArrayOf(cyan, Color.rgb(104, 255, 210))).apply { cornerRadius = 20f }
+            setOnClickListener {
+                val cmd = typed.text.toString().trim()
+                if (cmd.isNotEmpty()) handleCommand(cmd) else status.text = "TYPE A MESSAGE FIRST"
+            }
+        }
+        composer.addView(send, LinearLayout.LayoutParams(46, 46).apply { leftMargin = 5 })
+        root.addView(composer, LinearLayout.LayoutParams(-1, -2).apply { topMargin = 10 })
 
-        val privacy = label("PRIVACY FIRST\nMic activates only when you tap. Messages open as drafts for you to review and send. No secret background listening.", 11f, muted)
-        privacy.setLineSpacing(3f, 1f)
-        privacy.setPadding(4, 22, 4, 0)
-        root.addView(privacy)
+        val bottomRow = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            setPadding(2, 9, 2, 0)
+        }
+        val privacy = label("🔒 PRIVATE BY DESIGN • MIC ONLY WHEN TAPPED", 9f, muted, true)
+        bottomRow.addView(privacy, LinearLayout.LayoutParams(0, -2, 1f))
+        micButton = TextView(this).apply {
+            text = "🎙  SPEAK"
+            textSize = 11f
+            gravity = Gravity.CENTER
+            setTextColor(cyan)
+            setPadding(13, 9, 13, 9)
+            background = rounded(Color.rgb(14, 42, 59), 24f, Color.rgb(44, 136, 161))
+            setOnClickListener { startListening() }
+        }
+        bottomRow.addView(micButton)
+        root.addView(bottomRow)
 
-        setContentView(ScrollView(this).apply {
-            isFillViewport = true
-            clipToPadding = false
-            setPadding(0, 0, 0, 0)
-            addView(root)
-        })
+        setContentView(root)
     }
 
     private fun startListening() {
