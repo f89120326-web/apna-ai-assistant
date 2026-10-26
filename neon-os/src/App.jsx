@@ -1,0 +1,90 @@
+import React, { useEffect, useMemo, useState } from 'react';
+import { Activity, ArrowDownRight, ArrowUpRight, BatteryCharging, Bell, Bolt, Check, ChevronRight, CircleHelp, Clock3, Command, Cpu, Focus, Gauge, Grid2X2, Home, Layers3, ListTodo, LockKeyhole, Moon, MoreHorizontal, Plus, Power, Radio, Search, Settings2, ShieldCheck, Sparkles, Terminal, TimerReset, Trash2, Wifi, X, Zap } from 'lucide-react';
+
+const nav = [
+  { id:'home', label:'Overview', icon:Home },
+  { id:'focus', label:'Focus mode', icon:Focus },
+  { id:'notes', label:'Memory bank', icon:Layers3 },
+  { id:'system', label:'System', icon:Settings2 },
+];
+const initialNotes = [{id:1,title:'System idea',body:'Make the everyday feel futuristic.',time:'JUST NOW'}];
+
+function formatDate(date) {
+  return date.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'}).toUpperCase();
+}
+function App() {
+  const [page,setPage] = useState('home');
+  const [now,setNow] = useState(new Date());
+  const [battery,setBattery] = useState(null);
+  const [focusMinutes,setFocusMinutes] = useState(25);
+  const [secondsLeft,setSecondsLeft] = useState(25*60);
+  const [running,setRunning] = useState(false);
+  const [notes,setNotes] = useState(() => { try { return JSON.parse(localStorage.getItem('neon-notes')) || initialNotes; } catch { return initialNotes; } });
+  const [draftTitle,setDraftTitle] = useState('');
+  const [draftBody,setDraftBody] = useState('');
+  const [showComposer,setShowComposer] = useState(false);
+  const [toast,setToast] = useState('');
+  const [search,setSearch] = useState('');
+  const [ambient,setAmbient] = useState(true);
+  const [reducedMotion,setReducedMotion] = useState(false);
+
+  useEffect(()=>{ const t=setInterval(()=>setNow(new Date()),1000); return ()=>clearInterval(t); },[]);
+  useEffect(()=>{ let timer; if(running && secondsLeft>0) timer=setInterval(()=>setSecondsLeft(s=>Math.max(0,s-1)),1000); if(secondsLeft===0 && running){setRunning(false);setToast('FOCUS SESSION COMPLETE');} return ()=>clearInterval(timer); },[running,secondsLeft]);
+  useEffect(()=>{ localStorage.setItem('neon-notes',JSON.stringify(notes)); },[notes]);
+  useEffect(()=>{ if(!('getBattery' in navigator)) return; let b; navigator.getBattery().then(x=>{b=x;const update=()=>setBattery(Math.round(x.level*100));update();x.addEventListener('levelchange',update);}).catch(()=>{}); return ()=>{ if(b) b.removeEventListener('levelchange',()=>{}); }; },[]);
+  useEffect(()=>{ if(!toast) return; const t=setTimeout(()=>setToast(''),2600); return ()=>clearTimeout(t); },[toast]);
+
+  const clock = useMemo(()=>now.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit',second:'2-digit'}),[now]);
+  const timerText = `${String(Math.floor(secondsLeft/60)).padStart(2,'0')}:${String(secondsLeft%60).padStart(2,'0')}`;
+  const progress = 1 - secondsLeft/(focusMinutes*60 || 1);
+
+  function startFocus(){ setPage('focus'); setRunning(true); }
+  function saveNote(){ if(!draftTitle.trim() && !draftBody.trim()) return; setNotes([{id:Date.now(),title:draftTitle.trim()||'Untitled thought',body:draftBody.trim(),time:new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}).toUpperCase()},...notes]); setDraftTitle('');setDraftBody('');setShowComposer(false);setToast('MEMORY SAVED'); }
+  function deleteNote(id){setNotes(notes.filter(n=>n.id!==id));setToast('MEMORY REMOVED');}
+  const filteredNotes = notes.filter(n=>(n.title+' '+n.body).toLowerCase().includes(search.toLowerCase()));
+
+  return <div className={`app-shell ${ambient?'ambient-on':''} ${reducedMotion?'reduced-motion':''}`}>
+    <div className="backdrop-grid" aria-hidden="true"/><div className="glow glow-cyan"/><div className="glow glow-violet"/>
+    <aside className="rail">
+      <button className="brand-mark" onClick={()=>setPage('home')} aria-label="NEON OS home"><span className="brand-glyph"><i/><i/><i/></span></button>
+      <div className="rail-line"/>
+      {nav.map(item=>{const Icon=item.icon;return <button key={item.id} className={`rail-button ${page===item.id?'selected':''}`} onClick={()=>setPage(item.id)} title={item.label}><Icon size={19}/><span className="rail-tip">{item.label}</span></button>})}
+      <div className="rail-bottom"><span className="online-dot"/><span>SYS<br/>ONLINE</span></div>
+    </aside>
+    <main className="main-content">
+      <header className="topbar">
+        <div className="breadcrumb"><span className="crumb-muted">NEON</span><span className="crumb-slash">/</span><span>{nav.find(n=>n.id===page)?.label.toUpperCase()}</span></div>
+        <div className="topbar-right"><span className="system-pill"><span className="pulse-dot"/> ALL SYSTEMS NOMINAL</span><button className="icon-button" aria-label="Notifications" onClick={()=>setToast('YOU ARE ALL CAUGHT UP')}><Bell size={17}/><i className="notification-dot"/></button><div className="avatar">N<span/></div></div>
+      </header>
+      <div className="mobile-brand"><div className="brand-glyph"><i/><i/><i/></div><span>NEON<span className="brand-os"> OS</span></span><span className="mobile-status"><i/> ONLINE</span></div>
+      {page==='home' && <section className="page page-home">
+        <div className="eyebrow"><span className="eyebrow-line"/> PERSONAL COMMAND INTERFACE <span className="eyebrow-code">N° 001 — 26</span></div>
+        <div className="hero-heading"><div><h1>Your world.<br/><span>Under control.</span></h1><p className="hero-sub">A clearer headspace starts here. Welcome back.</p></div><div className="hero-clock"><div className="clock-label"><span className="live-dot"/> LOCAL SYSTEM TIME</div><div className="clock-digits">{clock}</div><div className="clock-date">{formatDate(now)} <span>·</span> PUNJAB, IN</div></div></div>
+        <div className="hero-panel">
+          <div className="panel-sheen"/>
+          <div className="hero-panel-top"><div className="tiny-label"><span className="signal-icon"><Activity size={13}/></span> CORE TELEMETRY <span className="muted">/ LIVE FEED</span></div><div className="panel-id">NX-01 <span>●</span></div></div>
+          <div className="core-layout">
+            <div className="core-visual"><div className="orbit orbit-outer"/><div className="orbit orbit-mid"/><div className="orbit orbit-inner"/><div className="core-center"><div className="core-spark"><Bolt size={29} fill="currentColor"/></div><span>NEURAL<br/>CORE</span></div><span className="orbit-point point-a"/><span className="orbit-point point-b"/><span className="orbit-point point-c"/></div>
+            <div className="core-info"><div className="core-kicker">INTERFACE STATUS</div><div className="core-status">Fully <span>operational</span><span className="check-ring"><Check size={14}/></span></div><p>All personal modules are responding within normal parameters.</p><div className="status-bars"><div><span>PROCESSING</span><b>OPTIMAL</b></div><div className="bar-track"><i style={{width:'86%'}}/></div><div><span>SYNC INTEGRITY</span><b>STABLE</b></div><div className="bar-track violet"><i style={{width:'94%'}}/></div></div></div>
+            <div className="core-metrics"><div className="metric"><div className="metric-icon"><BatteryCharging size={17}/></div><span className="metric-label">BATTERY</span><strong>{battery===null?'—':battery+'%'}</strong><small>{battery===null?'DEVICE DATA N/A':'DEVICE LEVEL'}</small></div><div className="metric"><div className="metric-icon violet-icon"><Wifi size={17}/></div><span className="metric-label">CONNECTION</span><strong>Active</strong><small>LOCAL NETWORK</small></div></div>
+          </div>
+          <div className="panel-footer"><span><span className="tiny-pulse"/> ENCRYPTED LOCAL SESSION</span><span>LAST SYNC <b>JUST NOW</b></span><span className="footer-code">NEON_KERNEL_V1.0</span></div>
+        </div>
+        <div className="section-heading"><div><span className="section-index">01</span><h2>Launch modules</h2><p>Tools for your everyday flow.</p></div><span className="section-count">03 MODULES <span>↘</span></span></div>
+        <div className="module-grid">
+          <button className="module-card focus-card" onClick={startFocus}><div className="module-top"><div className="module-icon"><Focus size={20}/></div><span className="module-number">MOD.01</span><ArrowUpRight size={17} className="module-arrow"/></div><div className="module-title">Neural focus</div><p>Disconnect the noise.<br/>Reconnect with the work.</p><div className="module-bottom"><span className="module-status"><i/> READY TO INITIATE</span><span className="module-cta">START <ChevronRight size={13}/></span></div><div className="card-decoration focus-decoration"/></button>
+          <button className="module-card memory-card" onClick={()=>setPage('notes')}><div className="module-top"><div className="module-icon"><Layers3 size={20}/></div><span className="module-number">MOD.02</span><ArrowUpRight size={17} className="module-arrow"/></div><div className="module-title">Memory bank</div><p>Capture a thought before<br/>it disappears into the void.</p><div className="module-bottom"><span className="module-status"><i/> {String(notes.length).padStart(2,'0')} STORED ENTRIES</span><span className="module-cta">OPEN <ChevronRight size={13}/></span></div><div className="card-decoration memory-decoration"/></button>
+          <button className="module-card system-card" onClick={()=>setPage('system')}><div className="module-top"><div className="module-icon"><Cpu size={20}/></div><span className="module-number">MOD.03</span><ArrowUpRight size={17} className="module-arrow"/></div><div className="module-title">System lab</div><p>Shape the interface to<br/>match your own rhythm.</p><div className="module-bottom"><span className="module-status"><i/> CONFIGURATION</span><span className="module-cta">TUNE <ChevronRight size={13}/></span></div><div className="card-decoration system-decoration"/></button>
+        </div>
+        <div className="bottom-strip"><div className="strip-icon"><ShieldCheck size={17}/></div><div><strong>Your space stays yours.</strong><p>Notes are stored in this browser. No account, no cloud sync, no tracking.</p></div><span className="privacy-label">LOCAL-FIRST <LockKeyhole size={13}/></span></div>
+      </section>}
+      {page==='focus' && <section className="page subpage"><div className="eyebrow"><span className="eyebrow-line"/> MODULE 01 <span className="eyebrow-code">ATTENTION PROTOCOL</span></div><div className="subpage-title"><h1>Neural <span>focus.</span></h1><p>One task. One window. Your attention is the interface.</p></div><div className="focus-layout"><div className="focus-console"><div className="console-top"><span><span className="live-dot"/> FOCUS SEQUENCE</span><span>NX / 01</span></div><div className="timer-wrap"><svg className="timer-svg" viewBox="0 0 300 300"><circle className="timer-track" cx="150" cy="150" r="126"/><circle className="timer-progress" cx="150" cy="150" r="126" strokeDasharray={791.68} strokeDashoffset={791.68*progress}/></svg><div className="timer-center"><span className="timer-status">{running?'IN SESSION':'READY WHEN YOU ARE'}</span><strong>{timerText}</strong><span className="timer-caption">MINUTES : SECONDS</span></div></div><div className="timer-actions"><button className="primary-button" onClick={()=>setRunning(!running)}>{running?'PAUSE SESSION':'BEGIN FOCUS'} <ChevronRight size={16}/></button><button className="reset-button" onClick={()=>{setRunning(false);setSecondsLeft(focusMinutes*60);}}> <TimerReset size={16}/> RESET</button></div><div className="console-bottom"><span><i/> LOCAL TIMER</span><span>NO DISTRACTIONS. NO DRAMA.</span></div></div><div className="focus-options"><div className="options-head"><span>SESSION CONFIG</span><Settings2 size={16}/></div><p>Choose your focus window. You can pause or reset anytime.</p><div className="duration-options">{[15,25,45,60].map(m=><button key={m} className={focusMinutes===m?'duration active':'duration'} onClick={()=>{setFocusMinutes(m);setSecondsLeft(m*60);setRunning(false);}}><strong>{m}</strong><span>MIN</span></button>)}</div><div className="focus-tip"><div className="tip-icon"><Sparkles size={17}/></div><div><strong>Small steps compound.</strong><p>Put one task in front of you. Everything else can wait until the timer ends.</p></div></div><div className="protocol-row"><span>PROTOCOL</span><b>DEEP WORK / 01</b></div><div className="protocol-row"><span>NOTIFICATIONS</span><b className="disabled-text">NOT CONTROLLED BY WEB APP</b></div></div></div></section>}
+      {page==='notes' && <section className="page subpage"><div className="eyebrow"><span className="eyebrow-line"/> MODULE 02 <span className="eyebrow-code">PERSONAL MEMORY STORAGE</span></div><div className="notes-heading"><div className="subpage-title"><h1>Memory <span>bank.</span></h1><p>Ideas, reminders, fragments. Kept close, kept local.</p></div><button className="primary-button new-note" onClick={()=>setShowComposer(true)}><Plus size={17}/> NEW ENTRY</button></div><div className="notes-toolbar"><div className="search-box"><Search size={16}/><input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search your memory bank..."/><span>{filteredNotes.length} ENTRIES</span></div><span className="local-tag"><LockKeyhole size={13}/> LOCAL STORAGE</span></div>{showComposer&&<div className="note-composer"><div className="composer-header"><span>NEW MEMORY ENTRY</span><button className="icon-button" onClick={()=>setShowComposer(false)} aria-label="Close"><X size={16}/></button></div><input className="note-title-input" value={draftTitle} onChange={e=>setDraftTitle(e.target.value)} placeholder="Give this thought a title..."/><textarea value={draftBody} onChange={e=>setDraftBody(e.target.value)} placeholder="Get it out of your head and into your space..."/><div className="composer-actions"><span>STORED ON THIS DEVICE ONLY</span><button className="primary-button" onClick={saveNote}>SAVE ENTRY <Check size={15}/></button></div></div>}<div className="notes-grid">{filteredNotes.map(note=><article className="note-card" key={note.id}><div className="note-card-top"><span className="note-tag"><span/> MEMORY FRAGMENT</span><button className="delete-note" onClick={()=>deleteNote(note.id)} aria-label="Delete note"><Trash2 size={15}/></button></div><h3>{note.title}</h3><p>{note.body||'No additional details.'}</p><div className="note-card-footer"><span>ENTRY / {String(note.id).slice(-4)}</span><span>{note.time}</span></div></article>)}{filteredNotes.length===0&&<div className="empty-state"><Layers3 size={28}/><strong>No memories found.</strong><p>Try a different search or create a new entry.</p><button className="secondary-button" onClick={()=>setShowComposer(true)}>CREATE ENTRY <Plus size={15}/></button></div>}</div></section>}
+      {page==='system' && <section className="page subpage"><div className="eyebrow"><span className="eyebrow-line"/> MODULE 03 <span className="eyebrow-code">INTERFACE CONFIGURATION</span></div><div className="subpage-title"><h1>System <span>lab.</span></h1><p>Small adjustments. A space that feels like yours.</p></div><div className="settings-grid"><div className="settings-panel"><div className="settings-panel-title"><div className="module-icon"><Sparkles size={18}/></div><div><h3>Visual experience</h3><p>Adjust the atmosphere of your interface.</p></div></div><div className="setting-row"><div><strong>Ambient glow</strong><span>Keep the soft cyan and violet light active.</span></div><button className={`toggle ${ambient?'on':''}`} role="switch" aria-checked={ambient} onClick={()=>setAmbient(!ambient)}><i/></button></div><div className="setting-row"><div><strong>Reduced motion</strong><span>Reduce decorative movement and transitions.</span></div><button className={`toggle ${reducedMotion?'on':''}`} role="switch" aria-checked={reducedMotion} onClick={()=>setReducedMotion(!reducedMotion)}><i/></button></div></div><div className="settings-panel"><div className="settings-panel-title"><div className="module-icon violet-module"><ShieldCheck size={18}/></div><div><h3>Privacy & storage</h3><p>Transparent by design. No hidden services.</p></div></div><div className="privacy-row"><LockKeyhole size={17}/><div><strong>Local-first storage</strong><span>Notes remain in this browser's local storage.</span></div><span className="privacy-check"><Check size={13}/> ACTIVE</span></div><div className="privacy-row"><Radio size={17}/><div><strong>Background listening</strong><span>No microphone access or wake-word monitoring.</span></div><span className="privacy-check neutral">OFF</span></div><div className="privacy-row"><Activity size={17}/><div><strong>Live device telemetry</strong><span>Battery is shown only when browser support exists.</span></div><span className="privacy-check neutral">LIMITED</span></div></div><div className="about-panel"><div className="about-logo"><div className="brand-glyph"><i/><i/><i/></div><div><strong>NEON OS</strong><span>PERSONAL COMMAND INTERFACE</span></div></div><div className="about-version">VERSION <b>1.0.0</b><span>·</span> BUILD 001</div><p>A web-based concept interface. Designed for mobile screens, with privacy-first local features and no claims of native Android control.</p></div></div></section>}
+      <footer className="site-footer"><span>© 2026 NEON INTERFACE LAB</span><span><i className="footer-dot"/> RUNNING LOCALLY IN YOUR BROWSER</span><span className="footer-version">V 1.0.0 <span>◆</span></span></footer>
+    </main>
+    <nav className="mobile-nav">{nav.map(item=>{const Icon=item.icon;return <button key={item.id} className={page===item.id?'active':''} onClick={()=>setPage(item.id)}><Icon size={19}/><span>{item.label==='Overview'?'Home':item.label==='Focus mode'?'Focus':item.label==='Memory bank'?'Notes':'System'}</span></button>})}</nav>
+    {toast&&<div className="toast"><span className="toast-check"><Check size={14}/></span>{toast}<button onClick={()=>setToast('')} aria-label="Dismiss"><X size={14}/></button></div>}
+  </div>;
+}
+export default App;
