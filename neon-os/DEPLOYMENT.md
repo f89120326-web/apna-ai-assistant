@@ -6,3 +6,4 @@ This project is deployed with Cloudflare Pages.
 - Build command: `npm run build`
 - Build output directory: `dist`
 - Project root: `neon-os`
+- Cloudflare Pages project: `neon-os-interface`
