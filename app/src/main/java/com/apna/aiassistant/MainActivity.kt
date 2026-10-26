@@ -19,6 +19,8 @@ import android.widget.*
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import org.json.JSONArray
+import org.json.JSONObject
 
 class MainActivity : Activity(), TextToSpeech.OnInitListener {
     private var recognizer: SpeechRecognizer? = null
@@ -264,11 +266,38 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
                     1 -> "नमस्ते! मैं आपकी कैसे मदद कर सकता हूँ?"
                     else -> "Hello! How can I help you?"
                 }
-            else -> "I heard: $raw. Try open Instagram, open WhatsApp, open YouTube, or ask the time."
+            else -> { askAI(raw); return }
         }
         transcript.text = "YOU  /  $raw\n\nAPNA AI  /  $reply"
         status.text = "SYSTEM READY  •  TAP TO ACTIVATE"
         speak(reply)
+    }
+
+    private fun askAI(raw: String) {
+        if (busy) return
+        busy = true
+        status.text = "✦ THINKING…"
+        transcript.text = "YOU  /  " + raw + "\n\nAPNA AI  /  ਸੋਚ ਰਿਹਾ ਹਾਂ…"
+        val history = JSONArray()
+        val start = (chatHistory.length() - 8).coerceAtLeast(0)
+        for (i in start until chatHistory.length()) history.put(chatHistory.getJSONObject(i))
+        AiClient.ask(raw, locales[language.selectedItemPosition], history) { answer, error ->
+            runOnUiThread {
+                busy = false
+                if (answer != null) {
+                    chatHistory.put(JSONObject().put("role", "user").put("content", raw))
+                    chatHistory.put(JSONObject().put("role", "assistant").put("content", answer))
+                    while (chatHistory.length() > 12) chatHistory.remove(0)
+                    transcript.text = "YOU  /  " + raw + "\n\nAPNA AI  /  " + answer
+                    status.text = "SYSTEM READY • APNA AI"
+                    typed.setText("")
+                    speak(answer)
+                } else {
+                    status.text = "CONNECTION ISSUE • TRY AGAIN"
+                    transcript.text = "YOU  /  " + raw + "\n\nAPNA AI  /  I couldn't connect. Check internet and try again. " + (error ?: "")
+                }
+            }
+        }
     }
 
     private fun openApp(packageName: String, label: String): String {
