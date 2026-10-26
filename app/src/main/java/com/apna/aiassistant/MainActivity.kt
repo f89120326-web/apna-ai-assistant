@@ -229,6 +229,13 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
 
     private fun handleCommand(raw: String) {
         val command = raw.lowercase(Locale.ROOT)
+        if (command.contains("developer") || command.contains("who made you") || command.contains("who created you") ||
+            command.contains("ਕਿਸ ਨੇ ਬਣਾਇਆ") || command.contains("ਕਿਸਨੇ ਬਣਾਇਆ") || command.contains("डेवलपर") || command.contains("किसने बनाया")) {
+            transcript.text = "YOU  /  " + raw + "\n\nAPNA AI  /  Pindu-Tiwana"
+            speak("Pindu-Tiwana")
+            status.text = "SYSTEM READY • APNA AI"
+            return
+        }
         val reply: String = when {
             command.contains("time") || command.contains("समय") || command.contains("ਟਾਈਮ") || command.contains("ਵਕਤ") ->
                 "The time is " + SimpleDateFormat("h:mm a", Locale.getDefault()).format(Date())
@@ -341,8 +348,15 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
     override fun onInit(statusCode: Int) {
         if (statusCode == TextToSpeech.SUCCESS) {
             ttsReady = true
-            tts?.language = Locale("en", "IN")
-            status.text = "SYSTEM READY  •  TAP TO ACTIVATE"
+            val punjabi = Locale.forLanguageTag("pa-IN")
+            val available = tts?.isLanguageAvailable(punjabi) ?: TextToSpeech.LANG_NOT_SUPPORTED
+            if (available >= TextToSpeech.LANG_AVAILABLE) {
+                tts?.language = punjabi
+                status.text = "PUNJABI VOICE READY"
+            } else {
+                tts?.language = Locale("en", "IN")
+                status.text = "READY • VOICE DEPENDS ON PHONE"
+            }
         } else {
             status.text = "VOICE ENGINE UNAVAILABLE • CHECK TTS SETTINGS"
         }
