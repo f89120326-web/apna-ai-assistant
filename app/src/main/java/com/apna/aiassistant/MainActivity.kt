@@ -26,6 +26,8 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
     private var recognizer: SpeechRecognizer? = null
     private var tts: TextToSpeech? = null
     private var ttsReady = false
+    private var busy = false
+    private val chatHistory = JSONArray()
     private lateinit var status: TextView
     private lateinit var transcript: TextView
     private lateinit var language: Spinner
