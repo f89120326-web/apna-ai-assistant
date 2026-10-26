@@ -7,6 +7,7 @@ export default {
       "Access-Control-Allow-Headers": "Content-Type"
     };
     if (request.method === "OPTIONS") return new Response(null, { headers: cors });
+    if (url.pathname === "/api/health" && request.method === "GET") return Response.json({ ok: true, service: "APNA AI" }, { headers: cors });
     if (url.pathname !== "/api/chat") return new Response("Not found", { status: 404, headers: cors });
     if (request.method !== "POST") return Response.json({ error: "Use POST" }, { status: 405, headers: cors });
     if (!env.AI) return Response.json({ error: "Cloudflare Workers AI binding is not configured." }, { status: 503, headers: cors });
