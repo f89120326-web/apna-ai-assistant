@@ -32,7 +32,7 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
     private lateinit var transcript: TextView
     private lateinit var language: Spinner
     private lateinit var typed: EditText
-    private lateinit var micButton: Button
+    private lateinit var micButton: TextView
     private val languages = listOf("Punjabi • ਪੰਜਾਬੀ", "Hindi • हिन्दी", "English")
     private val locales = listOf("pa-IN", "hi-IN", "en-IN")
     private val bg = Color.rgb(6, 10, 24)
